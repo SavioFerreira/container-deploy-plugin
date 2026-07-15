@@ -58,6 +58,15 @@ public class ReloadEndpoint {
         }
     }
 
+    public static void broadcastError(String application) throws IOException {
+        log.fine("broadcasting error endpoint %s".formatted(application));
+        for (Session session : sessions(application)) {
+            log.fine(("Handling error for Web LiveReload application "
+                    + "%s session %s").formatted(application, session.getId()));
+            session.getBasicRemote().sendText("error");
+        }
+    }
+
     static Set<Session> sessions(String application) {
         return Optional.ofNullable(SESSIONS.get(application)).orElse(Set.of());
     }

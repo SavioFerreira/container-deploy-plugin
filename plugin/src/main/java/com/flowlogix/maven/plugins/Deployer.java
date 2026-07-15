@@ -219,6 +219,26 @@ class Deployer {
     }
 
     @SuppressWarnings("checkstyle:MagicNumber")
+    @SneakyThrows({IOException.class, InterruptedException.class})
+    public CommandResult sendErrorCommand(String baseURL, String applicationName,
+                                          @NonNull BiConsumer<String, CommandResponse> responseCallback) {
+        HttpResponse<Void> response;
+        try {
+            HttpClient client = HttpClient.newHttpClient();
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create("%s/%s/reload/error/%s".formatted(baseURL, FLOWLOGIX_LIVERELOAD, applicationName)))
+                    .POST(HttpRequest.BodyPublishers.noBody())
+                    .build();
+            response = client.send(request, HttpResponse.BodyHandlers.discarding());
+        } catch (ConnectException e) {
+            responseCallback.accept("error", null);
+            return CommandResult.NO_CONNECTION;
+        }
+        responseCallback.accept("error", new CommandResponse(response.statusCode(), null));
+        return response.statusCode() == 200 ? CommandResult.SUCCESS : CommandResult.ERROR;
+    }
+
+    @SuppressWarnings("checkstyle:MagicNumber")
     void printResponse(String command, CommandResponse response) {
         if (response == null) {
             getLog().warn("Failed to connect to server at %s. Is it running?"

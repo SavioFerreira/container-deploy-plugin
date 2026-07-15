@@ -34,6 +34,13 @@ public class ReloadTrigger {
         return Response.ok().build();
     }
 
+    @POST
+    @Path("/reload/error/{application}")
+    public Response error(@PathParam("application") String application) throws IOException {
+        ReloadEndpoint.broadcastError(application);
+        return Response.ok().build();
+    }
+
     @GET
     @Path("/ping")
     public Response ping() {

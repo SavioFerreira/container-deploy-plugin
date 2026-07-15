@@ -164,14 +164,21 @@ public class DevModeMojo extends CommonDevMojo {
         getLog().debug("onChange: " + modifiedFiles);
         var filteredFiles = modifiedFiles.stream().filter(not(this::isIgnoredFile))
                 .collect(Collectors.toSet());
-        boolean codeChanged = filteredFiles.stream().filter(this::isSourceCode).findAny()
-                .map(var -> compileSources()).orElse(false);
+        boolean sourceCodeModified = filteredFiles.stream().anyMatch(this::isSourceCode);
+        boolean compilationSucceeded = sourceCodeModified && compileSources();
         if (filteredFiles.isEmpty()) {
             return;
         }
-
         explodedWar();
-        if (codeChanged) {
+        if (sourceCodeModified) {
+            if (!compilationSucceeded) {
+                getLog().warn("Compilation failed, sending error command for " + project.getBuild().getFinalName());
+                if (deployer.sendErrorCommand(getBaseURL(), project.getBuild().getFinalName(),
+                        deployer::printResponse) == CommandResult.ERROR) {
+                    getLog().warn("Website Error Handler failed");
+                }
+                return;
+            }
             getLog().info("Reloading " + project.getBuild().getFinalName());
             if (deployer.sendDisableCommand(deployer::printResponse) == CommandResult.ERROR) {
                 deployer.sendDeployCommand(deployer::printResponse, null, 0);
